@@ -3167,7 +3167,7 @@ def gui(options):
 
     app = init_qt()
     app.setApplicationName('OpenGEODE')
-    app.setWindowIcon(QtGui.QIcon(':icons/input.png'))
+    app.setWindowIcon(QtGui.QIcon('./icons/input.png'))
 
     # Set all encodings to utf-8 in Qt
     QtCore.QTextCodec.setCodecForCStrings(
@@ -3193,7 +3193,7 @@ def gui(options):
     loader = QUiLoader()
     loader.registerCustomWidget(OG_MainWindow)
     loader.registerCustomWidget(SDL_View)
-    ui_file = QFile(':/opengeode.ui')
+    ui_file = QFile('./opengeode.ui')
     ui_file.open(QFile.ReadOnly)
     my_widget = loader.load(ui_file)
     ui_file.close()
@@ -3217,6 +3217,7 @@ def opengeode():
             options.dll, options.toC)):
         return cli(options)
     else:
+        # 客户端界面
         return gui(options)
 
 
