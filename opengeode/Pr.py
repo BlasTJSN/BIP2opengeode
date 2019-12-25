@@ -415,6 +415,9 @@ def _start(symbol, recursive=True, **kwargs):
     ''' START symbol or branch if recursive is set '''
     result = Indent()
     result.append(cif_coord('START', symbol))
+    print "--------------start------cif_coord----------"
+    print cif_coord('START', symbol)
+    print "--------------start------cif_coord----------"
     result.append(u'START{via}{comment}'
                   .format(via=(' ' + unicode(symbol) + ' ')
                           if unicode(symbol).replace('START', '') else '',

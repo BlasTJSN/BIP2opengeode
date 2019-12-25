@@ -1255,6 +1255,9 @@ class Start(HorizontalSymbol):
         self.parser = ogParser
         if ast.comment:
             Comment(parent=self, ast=ast.comment)
+        print "sdlSymbols------------------Start--------ast----"
+        print ast
+        print "sdlSymbols------------------Start--------ast----"
 
     def __unicode__(self):
         ''' User cannot enter text in the START symbol - Return dummy text '''

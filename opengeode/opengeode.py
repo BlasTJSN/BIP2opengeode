@@ -310,7 +310,7 @@ class Sdl_toolbar(QtGui.QToolBar, object):
         for item in bar_items:
             item_name = item.__name__
             self.actions[item_name] = self.addAction(
-                           QtGui.QIcon(':icons/{}.png'
+                           QtGui.QIcon('./icons/{}.png'
                                        .format(item_name.lower())), item_name)
         self.update_menu()
 
@@ -411,7 +411,7 @@ class SDL_Scene(QtGui.QGraphicsScene, object):
         # on next scene click (see mousePressEvent)
         self.button_selected = None
         self.setBackgroundBrush(QtGui.QBrush(
-                                           QtGui.QImage(':icons/texture.png')))
+                                           QtGui.QImage('./icons/texture.png')))
         self.messages_window = QtGui.QListWidget()  # default
         self.click_coordinates = None
         self.orig_pos = None
@@ -2028,6 +2028,7 @@ clean:
             self.messages_window.clear()
         # Propose to check semantics if the last check had errors
         syntax_errors = None
+        # 如果有变化，提示保存前先进行check model
         if (not autosave) and self.something_changed:
             #(scene.semantic_errors
             #                 or not self.is_model_clean()):
@@ -2069,6 +2070,9 @@ clean:
 
         else:
             pr_file = QFile(filename)
+            print "----------------filename---------------"
+            print filename
+            print "----------------filename---------------"
             pr_path = QFileInfo(pr_file).path()
             pr_file.open(QIODevice.WriteOnly | QIODevice.Text)
             if not autosave and save_as:
@@ -2087,6 +2091,9 @@ clean:
 
         pr_raw = Pr.parse_scene(scene, full_model=True
                                        if not self.readonly_pr else False)
+        print "----------------------pr_raw------------------------"
+        print pr_raw
+        print "----------------------pr_raw------------------------"
 
         # Move items back to original place to avoid scrollbar jumps
         for item in self.scene().floating_symb:
@@ -2301,6 +2308,9 @@ clean:
             return "Non-SDL"
         pr_raw = Pr.parse_scene(scene, full_model=True
                                        if not self.readonly_pr else False)
+        print "----------------------pr_raw------------------------"
+        print pr_raw
+        print "----------------------pr_raw------------------------"
         pr_data = unicode('\n'.join(pr_raw))
         if pr_data:
             ast, warnings, errors = ogParser.parse_pr(files=self.readonly_pr,
