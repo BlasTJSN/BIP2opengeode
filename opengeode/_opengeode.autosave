@@ -1,4 +1,0 @@
-system OpenGEODE;
-    block OpenGEODE;
-    endblock;
-endsystem;

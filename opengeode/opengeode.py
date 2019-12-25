@@ -1639,6 +1639,7 @@ class SDL_View(QtGui.QGraphicsView, object):
         self.toolbar.update_menu(self.scene())
 
     # pylint: disable=C0103
+    # 键盘按键设置
     def keyPressEvent(self, event):
         ''' Handle keyboard: Zoom, open/save diagram, etc. '''
         if event.matches(QtGui.QKeySequence.ZoomOut):
@@ -2488,7 +2489,7 @@ class OG_MainWindow(QtGui.QMainWindow, object):
         self.statechart_scene = None
         self.vi_bar = Vi_bar()
         # Docking areas
-        self.datatypes_browser = None  # type: QtGui.QTextBrowser
+        # self.datatypes_browser = None  # type: QtGui.QTextBrowser
         #self.datatypes_scene = None
         self.asn1_area = None
         # MDI area (need to keep them to avoid segfault due to pyside bugs)
@@ -2511,7 +2512,7 @@ class OG_MainWindow(QtGui.QMainWindow, object):
                 lambda x: self.view.wrapping_window.setWindowModified(not x))
             scene.undo_stack.indexChanged.connect(lambda idx :
                     self.view.change_cleanliness(idx))
-            scene.context_change.connect(self.update_datadict_window)
+            # scene.context_change.connect(self.update_datadict_window)
             scene.word_under_cursor.connect(self.select_in_datadict_window)
 
     def start(self, options):
@@ -2584,9 +2585,11 @@ class OG_MainWindow(QtGui.QMainWindow, object):
         # it is a QtGui.QListWidget
         msg_dock = self.findChild(QtGui.QDockWidget, 'msgDock')
         msg_dock.setWindowTitle('Use F7 to check the model or update the '
-                                'Data view, and F3 to generate Ada code, '
-                                'F6 to generate Ada code with QGen or '
-                                'F9 to generate C code with QGen')
+                                'Data view'
+                                # 'Data view, and F3 to generate Ada code, '
+                                # 'F6 to generate Ada code with QGen or '
+                                # 'F9 to generate C code with QGen'
+                                )
         msg_dock.setStyleSheet('QDockWidget::title {background: lightgrey;}')
         messages = self.findChild(QtGui.QListWidget, 'messages')
         messages.addItem('Welcome to OpenGEODE.')
@@ -2603,36 +2606,40 @@ class OG_MainWindow(QtGui.QMainWindow, object):
                 self.statechart_mdi = each
                 self.mdi_area.subWindowActivated.connect(self.upd_statechart)
                 break
-
-        self.statechart_view = self.findChild(SDL_View, 'statechart_view')
+        print "-------------opengeode------------start--------sub_mdi-------"
+        print self.sub_mdi
+        print "-------------opengeode------------start--------sub_mdi-------"
+        # self.statechart_view = self.findChild(SDL_View, 'statechart_view')
         # statechart view 画布 -- SDL_Scene
-        self.statechart_scene = SDL_Scene(context='statechart')
-        self.statechart_view.setScene(self.statechart_scene)
+        # self.statechart_scene = SDL_Scene(context='statechart')
+        # self.statechart_view.setScene(self.statechart_scene)
+        # self.statechart_view.hide()
+        # self.statechart_mdi.hide()
 
         # 右侧数据信息栏设计
         # Set up the dock area to display the ASN.1 Data model
         # 分页功能
-        asn1_dock = self.findChild(QtGui.QDockWidget, 'datatypes_dock')
-        dict_dock = self.findChild(QtGui.QDockWidget, 'datadict_dock')
-        self.tabifyDockWidget(asn1_dock, dict_dock)
-        self.asn1_browser = self.findChild(QtGui.QTextBrowser, 'asn1_browser')
-        self.view.update_asn1_dock.connect(self.set_asn1_view)
-
-        # Set up the data dictionary window
-        self.datadict = self.findChild(QtGui.QTreeWidget, 'datadict')
-        self.datadict.setAlternatingRowColors(True)
-        self.datadict.setColumnCount(2)
-        self.datadict.itemClicked.connect(self.datadict_item_selected)
-
-        QtGui.QTreeWidgetItem(self.datadict, ["ASN.1 Data types"])
-        QtGui.QTreeWidgetItem(self.datadict, ["ASN.1 Constants"])
-        QtGui.QTreeWidgetItem(self.datadict, ["Input signals"])
-        QtGui.QTreeWidgetItem(self.datadict, ["Output signals"])
-        QtGui.QTreeWidgetItem(self.datadict, ["States"])
-        QtGui.QTreeWidgetItem(self.datadict, ["Labels"])
-        QtGui.QTreeWidgetItem(self.datadict, ["Variables"])
-        QtGui.QTreeWidgetItem(self.datadict, ["Timers"])
-        self.view.update_datadict.connect(self.update_datadict_window)
+        # asn1_dock = self.findChild(QtGui.QDockWidget, 'datatypes_dock')
+        # dict_dock = self.findChild(QtGui.QDockWidget, 'datadict_dock')
+        # self.tabifyDockWidget(asn1_dock, dict_dock)
+        # self.asn1_browser = self.findChild(QtGui.QTextBrowser, 'asn1_browser')
+        # self.view.update_asn1_dock.connect(self.set_asn1_view)
+        #
+        # # Set up the data dictionary window
+        # self.datadict = self.findChild(QtGui.QTreeWidget, 'datadict')
+        # self.datadict.setAlternatingRowColors(True)
+        # self.datadict.setColumnCount(2)
+        # self.datadict.itemClicked.connect(self.datadict_item_selected)
+        #
+        # QtGui.QTreeWidgetItem(self.datadict, ["ASN.1 Data types"])
+        # QtGui.QTreeWidgetItem(self.datadict, ["ASN.1 Constants"])
+        # QtGui.QTreeWidgetItem(self.datadict, ["Input signals"])
+        # QtGui.QTreeWidgetItem(self.datadict, ["Output signals"])
+        # QtGui.QTreeWidgetItem(self.datadict, ["States"])
+        # QtGui.QTreeWidgetItem(self.datadict, ["Labels"])
+        # QtGui.QTreeWidgetItem(self.datadict, ["Variables"])
+        # QtGui.QTreeWidgetItem(self.datadict, ["Timers"])
+        # self.view.update_datadict.connect(self.update_datadict_window)
 
         # Create a timer for periodically saving a backup of the model
         autosave = QTimer(self)
@@ -2655,7 +2662,7 @@ class OG_MainWindow(QtGui.QMainWindow, object):
         else:
             # Create a default context - at Block level - for the autocompleter
             sdlSymbols.CONTEXT = ogAST.Block()
-            self.update_datadict_window()
+            # self.update_datadict_window()
         # After file was loaded, try to restore window geometry
         self.restoreApplicationState()
 
@@ -2777,66 +2784,66 @@ class OG_MainWindow(QtGui.QMainWindow, object):
                 child.treeWidget().scrollToItem(child)
 
 
-    def update_datadict_window(self):
-        ''' Update the tree in the data dictionary based on the AST '''
-        # currently the ast is a global in sdlSymbols.CONTEXT
-        # it should be attached to the current scene instead TODO
-        (in_sig, out_sig, states, labels,
-         dcl, timers) = [self.datadict.topLevelItem(i) for i in range(2, 8)]
-        context = sdlSymbols.CONTEXT
-        def change_state(item, state):
-            ''' Disable (with state=True) or enable (state=False) one of the
-            root items of the data dictionary '''
-            item.setDisabled(state)
-            item.takeChildren()
-
-        def refresh_signals(root, signals):
-            for each in signals:
-                sort = each.get('type', '')
-                sort = sort.ReferencedTypeName if sort else ''
-                QtGui.QTreeWidgetItem(root, [each['name'], sort])
-
-        add_elem = lambda root, elem: QtGui.QTreeWidgetItem(root, [elem])
-
-        if self.view.scene().context == 'block':
-            map(lambda elem: change_state(elem, True),
-                (in_sig, out_sig, states, labels, dcl, timers))
-        elif self.view.scene().context == 'process':
-            map(lambda elem: change_state(elem, False),
-                (in_sig, out_sig, states, labels, dcl, timers))
-            refresh_signals(in_sig, context.input_signals)
-            refresh_signals(out_sig, context.output_signals)
-
-            for each in sorted(context.mapping.viewkeys()):
-                if each != 'START':
-                    state = QtGui.QTreeWidgetItem(states, [each, 'refactor'])
-                    state.setForeground(1, Qt.blue)
-
-            map(partial(add_elem, labels), sorted(l.inputString
-                                                  for l in context.labels))
-            map(partial(add_elem, timers), sorted(context.timers))
-
-            for var, (sort, _) in context.variables.viewitems():
-                try:
-                    sort_name = sort.ReferencedTypeName
-                except AttributeError:
-                    sort_name = "Undefined"
-                    self.view.messages_window.addItem(
-                            'Warning: Type of variable "{}" is undefined'
-                            .format(var))
-                QtGui.QTreeWidgetItem(dcl, [var, sort_name])
-
-        elif self.view.scene().context == 'procedure':
-            map(lambda elem: change_state(elem, True), (in_sig, states))
-            map(lambda elem: change_state(elem, False),
-                (dcl, timers, labels, out_sig))
-            for var, (sort, _) in context.variables.viewitems():
-                QtGui.QTreeWidgetItem(dcl, [var, sort.ReferencedTypeName])
-            map(partial(add_elem, timers), sorted(context.timers))
-            map(partial(add_elem, labels), sorted(l.inputString
-                                                  for l in context.labels))
-            refresh_signals(out_sig, context.output_signals)
-        self.datadict.resizeColumnToContents(0)
+    # def update_datadict_window(self):
+    #     ''' Update the tree in the data dictionary based on the AST '''
+    #     # currently the ast is a global in sdlSymbols.CONTEXT
+    #     # it should be attached to the current scene instead TODO
+    #     (in_sig, out_sig, states, labels,
+    #      dcl, timers) = [self.datadict.topLevelItem(i) for i in range(2, 8)]
+    #     context = sdlSymbols.CONTEXT
+    #     def change_state(item, state):
+    #         ''' Disable (with state=True) or enable (state=False) one of the
+    #         root items of the data dictionary '''
+    #         item.setDisabled(state)
+    #         item.takeChildren()
+    #
+    #     def refresh_signals(root, signals):
+    #         for each in signals:
+    #             sort = each.get('type', '')
+    #             sort = sort.ReferencedTypeName if sort else ''
+    #             QtGui.QTreeWidgetItem(root, [each['name'], sort])
+    #
+    #     add_elem = lambda root, elem: QtGui.QTreeWidgetItem(root, [elem])
+    #
+    #     if self.view.scene().context == 'block':
+    #         map(lambda elem: change_state(elem, True),
+    #             (in_sig, out_sig, states, labels, dcl, timers))
+    #     elif self.view.scene().context == 'process':
+    #         map(lambda elem: change_state(elem, False),
+    #             (in_sig, out_sig, states, labels, dcl, timers))
+    #         refresh_signals(in_sig, context.input_signals)
+    #         refresh_signals(out_sig, context.output_signals)
+    #
+    #         for each in sorted(context.mapping.viewkeys()):
+    #             if each != 'START':
+    #                 state = QtGui.QTreeWidgetItem(states, [each, 'refactor'])
+    #                 state.setForeground(1, Qt.blue)
+    #
+    #         map(partial(add_elem, labels), sorted(l.inputString
+    #                                               for l in context.labels))
+    #         map(partial(add_elem, timers), sorted(context.timers))
+    #
+    #         for var, (sort, _) in context.variables.viewitems():
+    #             try:
+    #                 sort_name = sort.ReferencedTypeName
+    #             except AttributeError:
+    #                 sort_name = "Undefined"
+    #                 self.view.messages_window.addItem(
+    #                         'Warning: Type of variable "{}" is undefined'
+    #                         .format(var))
+    #             QtGui.QTreeWidgetItem(dcl, [var, sort_name])
+    #
+    #     elif self.view.scene().context == 'procedure':
+    #         map(lambda elem: change_state(elem, True), (in_sig, states))
+    #         map(lambda elem: change_state(elem, False),
+    #             (dcl, timers, labels, out_sig))
+    #         for var, (sort, _) in context.variables.viewitems():
+    #             QtGui.QTreeWidgetItem(dcl, [var, sort.ReferencedTypeName])
+    #         map(partial(add_elem, timers), sorted(context.timers))
+    #         map(partial(add_elem, labels), sorted(l.inputString
+    #                                               for l in context.labels))
+    #         refresh_signals(out_sig, context.output_signals)
+    #     self.datadict.resizeColumnToContents(0)
 
     def vi_command(self):
         # type: () -> None
