@@ -158,12 +158,14 @@ class ResizeSymbol(QUndoCommand):
 
 class InsertSymbol(QUndoCommand):
     ''' Undo/Redo command for inserting a new item '''
-    def __init__(self, item, parent, pos):
+    def __init__(self, item, parent, pos, lastParent=None,method_type=None):
         super(InsertSymbol, self).__init__()
         self.item = item
         self.parent = parent
         self.pos_x = pos.x() if pos else None
         self.pos_y = pos.y() if pos else None
+        self.lastParent = lastParent
+        self.method_type = method_type
         try:
             self.scene = item.scene() or parent.scene()
         except AttributeError:
@@ -182,7 +184,17 @@ class InsertSymbol(QUndoCommand):
                 self.scene.addItem(self.item)
         except AttributeError:
             pass
-        self.item.insert_symbol(self.parent, self.pos_x, self.pos_y)
+
+        print "undoCommands-----InsertSymbol------------redo"
+        print unicode(self.parent)
+        print self.parent.__class__
+        print unicode(self.item)
+        print self.item.__class__
+        print "undoCommands-----InsertSymbol------------redo"
+        if self.method_type == "connect":
+            self.item.insert_symbol_connect(self.parent, self.pos_x, self.pos_y, self.lastParent)
+        else:
+            self.item.insert_symbol(self.parent, self.pos_x, self.pos_y)
         # Replaced removeItem with hide/show to avoid exit crash
         self.item.show()
         self.item.grabber.display()

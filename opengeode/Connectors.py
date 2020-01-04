@@ -171,6 +171,59 @@ class RakeConnection(Connection):
         yield QPointF(self.start_point.x(), self.start_point.y() + 10)
         yield QPointF(self.end_point.x(), self.start_point.y() + 10)
 
+class BetweenConnection(Connection):
+    ''' Fork-like connection, e.g. between a state and an input symbol '''
+
+    @property
+    def start_point(self):
+        ''' Compute connection origin - redefined function '''
+
+        # print "I did IT----------------------------------"
+        # print unicode(self.parentItem())
+        # print unicode(self.parentItem().pos())
+        # # print self.child().pos()
+        # print "I did IT----------------------------------"
+        # print "I did IT"
+        # print "I did IT"
+        # print "I did IT"
+        # print "I did IT"
+        parent_rect = self.parentItem().boundingRect()
+        return QPointF(parent_rect.width() / 2, parent_rect.height())
+
+    @property
+    def end_point(self):
+        ''' Compute connection end point - redefined function '''
+        # coord = self.child.pos()
+        coord = self.child.scenePos()
+        # print "end_point--------------"
+        # print coord
+        # coord.setX(coord.x() + self.child.boundingRect().width() / 2)
+        child_rect = self.child.boundingRect()
+        # print self.parentItem().pos()
+        # print "end_point--------------"
+        p_x = self.parentItem().scenePos().x()
+        p_y = self.parentItem().scenePos().y()
+        print "child_coord----------------"
+        print coord.x()
+        print coord.y()
+        print "child_coord----------------"
+        coord.setX(-p_x+coord.x()+child_rect.width() / 2)
+        coord.setY(-p_y+coord.y()+child_rect.height())
+        # return QPointF(coord)
+
+        # coord.setX(0)
+        # coord.setY(0)
+        return coord
+
+        # child_rect = self.child().boundingRect()
+        # return QPointF(child_rect.width() / 2, child_rect.height())
+
+    @property
+    def middle_points(self):
+        ''' Compute connection intermediate points - redefined function '''
+        yield QPointF(self.start_point.x(), self.start_point.y() + 10)
+        yield QPointF(self.end_point.x(), self.start_point.y() + 10)
+
 
 class JoinConnection(Connection):
     ''' Inverted fork-like connection, to join to a common point '''
@@ -217,6 +270,28 @@ class VerticalConnection(Connection):
         point = self.child.pos()
         point.setX(self.start_point.x())
         return point
+# 新添加连接线
+# class BetweenConnection(Connection):
+#     '''Vertical line between parent'''
+#     @property
+#     def start_point(self):
+#         ''' Compute connection origin - redefined function '''
+#         parent_rect = self.parentItem().boundingRect()
+#         return getattr(self.parentItem(), 'connectionPoint',
+#                        QPointF(parent_rect.width() / 2, parent_rect.height()))
+#
+#     @property
+#     def end_point(self):
+#         ''' Compute connection end point - redefined function '''
+#         point = self.child.pos()
+#         point.setX(self.start_point.x())
+#         # point.setX(0)
+#         # point.setY(0)
+#         # print "BetweenConnection----end_point-----point"
+#         # print point
+#         # print(self.start_point.x())
+#         # print "BetweenConnection----end_point-----point"
+#         return point
 
 
 class CommentConnection(Connection):
@@ -328,6 +403,7 @@ class Signalroute(Connection):
         ''' Compute connection origin - redefined function '''
         parent_rect = self.parent.boundingRect()
         return QPointF(parent_rect.x(), parent_rect.height() / 2)
+        # return QPointF(0, 0)
 
     @property
     def end_point(self):
@@ -342,6 +418,8 @@ class Signalroute(Connection):
             scene_pos_x = self.mapFromScene(view_pos).x()
             #print view_pos.x(), scene_pos_x, view.sceneRect().x()
             return QPointF(scene_pos_x, self.start_point.y())
+            # parent_rect = self.parent.boundingRect()
+            # return QPointF(parent_rect.x()+250, parent_rect.height() / 2)
         except (IndexError, AttributeError):
             # In case there is no view (e.g. Export PNG from cmd line)
             return QPointF(self.start_point.x() - 250, self.start_point.y())
@@ -428,6 +506,10 @@ class Channel(Signalroute):
     @Slot(float, float)
     def child_moved(self, delta_x, delta_y):
         ''' When the connection child moves - redefined function '''
+        print "Channel-----------------child_moved"
+        print delta_x
+        print delta_y
+        print "Channel-----------------child_moved"
         self._end_point.setX(self._end_point.x() - delta_x)
         self._end_point.setY(self._end_point.y() - delta_y)
 

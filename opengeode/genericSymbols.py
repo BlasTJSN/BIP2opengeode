@@ -66,7 +66,7 @@ import undoCommands
 import ogAST
 import ogParser
 from Connectors import Connection, VerticalConnection, CommentConnection, \
-                       RakeConnection, JoinConnection, Channel
+                       RakeConnection, JoinConnection, Channel,BetweenConnection
 
 from TextInteraction import EditableText
 
@@ -971,6 +971,8 @@ class Cornergrabber(QGraphicsPolygonItem, object):
 
 
 # pylint: disable=R0904
+
+# connect的连线方式
 class HorizontalSymbol(Symbol, object):
     '''
         Class used to handle horizontal symbols
@@ -995,7 +997,15 @@ class HorizontalSymbol(Symbol, object):
 
     def connect_to_parent(self):
         ''' Redefined: connect to parent item '''
+        # 重点关注方法
         return RakeConnection(self.parent, self)
+
+    def connect_to_parent_between(self,parent,lastParent):
+        ''' Redefined: connect to parent item '''
+        # 重点关注方法
+        print "enter BetweenConnection-----------------------------------------------------"
+        # return BetweenConnection(parent, self)
+        return BetweenConnection(parent, lastParent)
 
     def set_valid_pos(self, pos):
         ''' Redefined function - make sure symbol is below its parent '''
@@ -1006,8 +1016,14 @@ class HorizontalSymbol(Symbol, object):
                         self.minDistanceToSymbolAbove)
             self.setPos(pos.x(), new_y)
 
+    # 重点方法
     def insert_symbol(self, parent, pos_x, pos_y):
         ''' Insert the symbol in the scene - Align below the parent '''
+        print "HorizontalSymbol-----insert_symbol----parent"
+        print unicode(parent)
+        print pos_x
+        print pos_y
+        print "HorizontalSymbol-----insert_symbol----parent"
         if not parent:
             self.position = QPointF(pos_x or 0, pos_y or 0)
             return
@@ -1046,8 +1062,65 @@ class HorizontalSymbol(Symbol, object):
                     self.minDistanceToSymbolAbove)
         self.position = QPointF(pos_x, pos_y)
         self.connection = self.connect_to_parent()
+
         self.updateConnectionPoints()
         #self.cam(self.position, self.position)
+
+############################
+    # 重点方法
+    def insert_symbol_connect(self, parent, pos_x, pos_y, lastParent=None):
+        ''' Insert the symbol in the scene - Align below the parent '''
+        print "HorizontalSymbol-----insert_symbol----parent"
+        print unicode(parent)
+        print pos_x
+        print pos_y
+        print "HorizontalSymbol-----insert_symbol----parent"
+        if not parent:
+            self.position = QPointF(pos_x or 0, pos_y or 0)
+            return
+        super(HorizontalSymbol, self).insert_symbol(parent, pos_x, pos_y)
+        if pos_x is None or pos_y is None:
+            # Usually for first insertion when item is created:
+            # compute position and (if relevant) move siblings
+            first, last = None, None
+            has_siblings = False
+            for sibling in self.siblings():
+                has_siblings = True
+                first = min(first, sibling.x()) if (
+                    first is not None) else sibling.x()
+                last = max(last, sibling.x() +
+                           sibling.boundingRect().width()) if (
+                    last is not None) else(sibling.x() +
+                                           sibling.boundingRect().width())
+            group_width = last - first if first is not None else 0
+            for sibling in self.siblings():
+                sib_x = sibling.x() - (self.boundingRect().width()) / 2 - 10
+                sib_oldpos = sibling.position
+                sibling.pos_x = sib_x
+                undo_cmd = undoCommands.MoveSymbol(sibling,
+                                                   sib_oldpos,
+                                                   sibling.position)
+                self.scene().undo_stack.push(undo_cmd)
+            most_left = min([sibling.x()
+                             for sibling in self.siblings()] or [0])
+            if has_siblings:
+                pos_x = most_left + group_width + 20
+            else:
+                # Verical alignment (x-axis):
+                pos_x = (parent.boundingRect().width() -
+                         self.boundingRect().width()) / 2
+            pos_y = (parent.boundingRect().height() +
+                     self.minDistanceToSymbolAbove)
+        self.position = QPointF(pos_x, pos_y)
+
+        if lastParent:
+            self.connection = self.connect_to_parent_between(parent, lastParent)
+        else:
+            self.connection = self.connect_to_parent()
+
+        self.updateConnectionPoints()
+        # self.cam(self.position, self.position)
+############################
 
     def update_connections(self):
         '''
@@ -1184,7 +1257,12 @@ class VerticalSymbol(Symbol, object):
 
     def connect_to_parent(self):
         ''' Redefined: connect to parent item with a straight line '''
-        return VerticalConnection(self.parent, self)
+        print "VerticalSymbol---connect_to_parent----self.parent"
+        print unicode(self.parent)
+        print self.childSymbols()
+        print "VerticalSymbol---connect_to_parent----self.parent"
+        # return VerticalConnection(self.parent, self)
+        return BetweenConnection(self.parent, self)
 
     def set_valid_pos(self, pos):
         ''' Redefined function - make sure symbol is well aligned '''

@@ -235,12 +235,12 @@ def paste_below_item(parent, scene):
             new_item = Renderer.render(i, scene=CLIPBOARD,
                                        parent=None, states=states)
             # Check that item is compatible with parent
-            if (type(new_item).__name__ in parent.allowed_followers):
-                # Move the item from the clipboard to the scene
-                Renderer.add_to_scene(new_item, scene)
-                new_item.pos_x = new_item.pos_y = 0.0
-                symbols.append(new_item)
-            else:
-                raise TypeError('Cannot paste here ({t1} cannot follow {t2})'
-                                .format(t1=type(new_item), t2=type(parent)))
+            # if (type(new_item).__name__ in parent.allowed_followers):
+            #     # Move the item from the clipboard to the scene
+            #     Renderer.add_to_scene(new_item, scene)
+            #     new_item.pos_x = new_item.pos_y = 0.0
+            #     symbols.append(new_item)
+            # else:
+            #     raise TypeError('Cannot paste here ({t1} cannot follow {t2})'
+            #                     .format(t1=type(new_item), t2=type(parent)))
     return symbols

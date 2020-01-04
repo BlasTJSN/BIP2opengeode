@@ -26,6 +26,7 @@ import pprint
 import random
 from functools import partial
 from itertools import chain
+import time
 
 # To freeze the application on Windows, all modules must be imported even
 # when they are not directly used from this module (py2exe bug)
@@ -177,7 +178,7 @@ G_SYMBOLS = set()
 
 # Lookup table used to configure the context-dependent toolbars
 ACTIONS = {
-    'block': [Process, ProcessType, Comment, TextSymbol],
+    'block': [Process, ProcessType, Comment, TextSymbol,State, Input, Connect],
     'process': [Start, State, Input, Connect, ContinuousSignal, Task, Decision,
                 DecisionAnswer, Output, ProcedureCall, TextSymbol, Comment,
                 Label, Join, Procedure],
@@ -302,6 +303,12 @@ class Sdl_toolbar(QtGui.QToolBar, object):
         self.setFloatable(False)
         self.setIconSize(QSize(35, 35))
         self.actions = {}
+        # print "------Sdl_toolbar----------__init__--------parent"
+        # print unicode(parent)
+        # print "------Sdl_toolbar----------__init__--------parent"
+
+
+
 
     def set_actions(self, bar_items):
         ''' Set the icons and actions on the toolbar '''
@@ -324,6 +331,7 @@ class Sdl_toolbar(QtGui.QToolBar, object):
         ''' See description in enable_action '''
         self.actions[action].setEnabled(False)
 
+    # 符号是否禁用
     def update_menu(self, scene=None):
         ''' Context-dependent enabling/disabling of menu buttons '''
         try:
@@ -345,30 +353,39 @@ class Sdl_toolbar(QtGui.QToolBar, object):
             # activate everything, and when user selects an icon,
             # keep the action on hold until he clicks on the scene
             for action in self.actions.viewkeys():
+                # print "-------self.actions.viewkeys()=-------------"
+                # print self.actions.viewkeys()
+                # print action
+                # print "-------self.actions.viewkeys()=-------------"
                 self.actions[action].setEnabled(True)
 
             # Check for singletons (e.g. START symbol)
-            try:
-                for item in scene.visible_symb:
-                    try:
-                        if item.is_singleton:
-                            self.actions[
-                                    item.__class__.__name__].setEnabled(False)
-                    except (AttributeError, KeyError) as error:
-                        LOG.debug(str(error))
-            except AttributeError:
-                pass
+            # 把只放置一个符号的限制去掉----------------
+            # try:
+            #     for item in scene.visible_symb:
+            #         try:
+            #             if item.is_singleton:
+            #                 self.actions[
+            #                         item.__class__.__name__].setEnabled(False)
+            #         except (AttributeError, KeyError) as error:
+            #             LOG.debug(str(error))
+            # except AttributeError:
+            #     pass
         else:
             # Only one selected item
+            # 判断那些有allowed_followers
+            # selection, = selection
+            # for action in self.actions.viewkeys():
+            #     self.actions[action].setEnabled(False)
+            # for action in getattr(selection, 'allowed_followers', []):
+            #     try:
+            #         self.actions[action].setEnabled(True)
+            #     except KeyError:
+            #         pass
+            #         #LOG.debug('No menu item for symbol "' + action + '"')
             selection, = selection
             for action in self.actions.viewkeys():
-                self.actions[action].setEnabled(False)
-            for action in getattr(selection, 'allowed_followers', []):
-                try:
-                    self.actions[action].setEnabled(True)
-                except KeyError:
-                    pass
-                    #LOG.debug('No menu item for symbol "' + action + '"')
+                self.actions[action].setEnabled(True)
 
 
 class SDL_Scene(QtGui.QGraphicsScene, object):
@@ -433,6 +450,18 @@ class SDL_Scene(QtGui.QGraphicsScene, object):
         self.refresh_requested = False
         # Flag indicating the presence of unsolved semantic errors in the model
         self.semantic_errors = False
+
+        # 连线节点
+        self.connectPoint = None
+        # 连线的父节点
+        self.connectStartPoint = None
+        # 连线结束节点
+        self.connectEndPoint = None
+
+
+
+
+
 
     def close(self):
         ''' close function is needed by py.test-qt '''
@@ -571,9 +600,15 @@ class SDL_Scene(QtGui.QGraphicsScene, object):
         return self.parent_scene.path + [self.name[0:-3]]
 
 
+    # 重点方法，获取选中的元素属性
     @property
     def selected_symbols(self):
         ''' Generate the list of selected symbols (excluding grabbers) '''
+        # print "SDL_Scene--------selected_symbols------------"
+        # print self.selectedItems()
+        # print "SDL_Scene--------selected_symbols------------"
+        if not self.selectedItems():
+            self.connectPoint = None
         for selection in self.selectedItems():
             if isinstance(selection, Symbol):
                 yield selection
@@ -1188,6 +1223,17 @@ class SDL_Scene(QtGui.QGraphicsScene, object):
                     or not selectable_only):
                 return item.parent if isinstance(item, Cornergrabber) else item
 
+    # def symbol_near_connect(self, pos, dist=5, selectable_only=True):
+    #     ''' If any, returns symbol around pos '''
+    #     items = self.items(
+    #             QRectF(pos.x() - dist, pos.y() - dist, 2 * dist, 2 * dist))
+    #     for item in items:
+    #         if((selectable_only and item.flags() &
+    #                 QtGui.QGraphicsItem.ItemIsSelectable)
+    #                 or not selectable_only):
+    #             # return item.parent if isinstance(item, Cornergrabber) else item
+    #             return item
+
 
     def can_insert(self, pos, item_type):
         ''' Check if we can add an item type at a given position '''
@@ -1217,10 +1263,22 @@ class SDL_Scene(QtGui.QGraphicsScene, object):
         subscene.word_under_cursor.connect(self.word_under_cursor.emit)
         return subscene
 
-
-    def place_symbol(self, item_type, parent, pos=None, rect=None):
+######################3
+    def place_connect_symbol(self, item_type, parent, lastParent, pos=None, rect=None):
         ''' Draw a symbol on the scene '''
+
+        print "------------place_symbol-------------------"
+        print item_type
+        print unicode(parent)
+        print unicode(lastParent)
+        print pos
+        print rect
+        print "------------place_symbol-------------------"
+
+        # time.sleep(5)
         item = item_type()
+        # time.sleep(5)
+        # 尺寸
         if rect is not None:
             # Optionally size the new item
             item.set_shape(rect.width(), rect.height())
@@ -1228,8 +1286,86 @@ class SDL_Scene(QtGui.QGraphicsScene, object):
         if item not in self.items():
             self.addItem(item)
         # Create Undo command (makes the call to the insert_symbol function):
+        # 关键方法---用于创建父节点和当前符号的连线关系
+        method_type = "connect"
+        undo_cmd = undoCommands.InsertSymbol(item=item, parent=lastParent, pos=pos, lastParent=parent,method_type=method_type)
+        self.undo_stack.push(undo_cmd)
+
+
+        # item.set_shape(100,0)
+        # 修改此处代码
+        # 我在这里直接触发connect_parent,自作型
+        # print "parent ----- analysis"
+        # print parent.boundingRect()
+        # print parent.sceneBoundingRect()
+        # print "parent ----- analysis"
+        # pos_x = pos.x() if pos else None
+        # pos_y = pos.y() if pos else None
+        # if parent and item_type == Connect:
+        #     # time.sleep(5)
+        #     item.connect_to_parent_between(parent,pos_x,pos_y)
+        # item.connect_to_parent_between(parent,lastParent)
+        # If no item is selected (e.g. new STATE), add it to the scene
+        if not parent:
+            G_SYMBOLS.add(item)
+
+        self.clearSelection()
+        self.clear_highlight()
+        self.clear_focus()
+        item.select()
+        item.cam(item.pos(), item.pos())
+        # When item is placed, immediately set focus to input text
+        item.edit_text()
+
+        for view in self.views():
+            view.view_refresh()
+            view.ensureVisible(item)
+        # time.sleep(5)
+        return item
+
+
+######################3
+
+
+
+    def place_symbol(self, item_type, parent, pos=None, rect=None):
+        ''' Draw a symbol on the scene '''
+
+        print "------------place_symbol-------------------"
+        print item_type
+        print unicode(parent)
+        print pos
+        print rect
+        print "------------place_symbol-------------------"
+
+        # time.sleep(5)
+        item = item_type()
+        # time.sleep(5)
+        # 尺寸
+        if rect is not None:
+            # Optionally size the new item
+            item.set_shape(rect.width(), rect.height())
+        # Add the item to the scene
+        if item not in self.items():
+            self.addItem(item)
+        # Create Undo command (makes the call to the insert_symbol function):
+        # 关键方法---用于创建父节点和当前符号的连线关系
+
         undo_cmd = undoCommands.InsertSymbol(item=item, parent=parent, pos=pos)
         self.undo_stack.push(undo_cmd)
+
+        # 我在这里直接触发connect_parent,自作型
+        # print "parent ----- analysis"
+        # print parent.boundingRect()
+        # print parent.sceneBoundingRect()
+        # print "parent ----- analysis"
+        pos_x = pos.x() if pos else None
+        pos_y = pos.y() if pos else None
+        # if parent and item_type == Connect:
+        #     # time.sleep(5)
+        #     item.connect_to_parent_between(parent,pos_x,pos_y)
+
+
         # If no item is selected (e.g. new STATE), add it to the scene
         if not parent:
             G_SYMBOLS.add(item)
@@ -1238,6 +1374,7 @@ class SDL_Scene(QtGui.QGraphicsScene, object):
             # When creating a new decision, add two default answers
             self.place_symbol(item_type=DecisionAnswer, parent=item)
             self.place_symbol(item_type=DecisionAnswer, parent=item)
+        # 可点击的符号
         elif item_type in (Procedure, State, Process):
             # Create a sub-scene for clickable symbols
             item.nested_scene = \
@@ -1254,20 +1391,43 @@ class SDL_Scene(QtGui.QGraphicsScene, object):
         for view in self.views():
             view.view_refresh()
             view.ensureVisible(item)
+        # time.sleep(5)
         return item
 
-
-
+    # 新增符号--把selection作为parent
     def add_symbol(self, item_type):
         ''' Add a symbol, or postpone until a parent symbol is selected  '''
+        # print "addadadadadaddaddaddaddaddaddadd"
+        # print "addadadadadaddaddaddaddaddaddadd"
+        # print "addadadadadaddaddaddaddaddaddadd"
+        # print "addadadadadaddaddaddaddaddaddadd"
+        # 重要函数 --- 左侧栏单击时间处理
         try:
             # If an item is selected or if its text has focus,
             # use it as parent item for the newly inserted item
             selection, = (list(self.selected_symbols) or
                           [self.focusItem().parentItem()])
-            with undoCommands.UndoMacro(self.undo_stack, 'Place Symbol'):
-                self.place_symbol(item_type=item_type, parent=selection)
+            # 此处获取
+            print item_type
+            if item_type == Connect:
+                # 获取startpoint
+                print "add_symbol -----------enter ccccccccccccc"
+                self.connectPoint = item_type
+                self.connectStartPoint = None
+                self.connectEndPoint = None
+                return None
+            else:
+
+                with undoCommands.UndoMacro(self.undo_stack, 'Place Symbol'):
+                    self.place_symbol(item_type=item_type, parent=selection)
         except (ValueError, AttributeError):
+
+            if item_type == Connect:
+                print "add_symbol -----------enter dddddddddddddddddddd"
+                self.connectPoint = item_type
+                self.connectStartPoint = None
+                self.connectEndPoint = None
+
             # Menu item clicked but no symbol selected
             # -> store until user clicks on the scene
             self.messages_window.clear()
@@ -1300,9 +1460,15 @@ class SDL_Scene(QtGui.QGraphicsScene, object):
             res.setX(point.x())
         else:
             res.setY(point.y())
+
+        # print "border_point------------------res"
+        # print res
+        # print "border_point------------------res"
         return res
 
     # pylint: disable=C0103
+
+    # 重点-------------鼠标单击场景
     def mousePressEvent(self, event):
         '''
             Handle mouse click on the scene:
@@ -1320,7 +1486,10 @@ class SDL_Scene(QtGui.QGraphicsScene, object):
         # Store mouse coordinates as possible paste position
         self.click_coordinates = event.scenePos()
         # Enter state machine
+        # print "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
         if self.mode == 'idle' and event.button() == Qt.LeftButton:
+            print "nononononoonononoonnononno"
+            # 鼠标点击选中符号后的操作
             # Idle mode: click triggers selection square
             nearby_connection = self.symbol_near(event.scenePos(),
                                                  selectable_only=False)
@@ -1331,6 +1500,57 @@ class SDL_Scene(QtGui.QGraphicsScene, object):
                 nearby_connection.mousePressEvent(event)
                 connection_selected = True
             symb = self.symbol_near(event.scenePos(), dist=1)
+            # symb = self.symbol_near_connect(event.scenePos(), dist=1)
+            # print "important-------------------------symb ---------------------"
+            # print unicode(symb)
+            # print symb.pos_x
+            # print symb.pos_y
+            # print symb.scenePos()
+            # print symb.scenePos()
+            # print "important-------------------------symb ---------------------"
+
+            # 判断是否有连线节点存储，如果有，则对点击操作的symbol进行保存
+            if self.connectPoint:
+
+                # self.connectPoint.connect_to_parent_between(symb,self.connectStartPoint)
+                # 替换为item
+                # item_type = Connect
+                # with undoCommands.UndoMacro(self.undo_stack, 'Place Symbol'):
+                #     self.place_connect_symbol(item_type=item_type, parent=symb, lastParent=self.connectStartPoint)
+
+                try:
+                    # If an item is selected or if its text has focus,
+                    # use it as parent item for the newly inserted item
+                    selection, = (list(self.selected_symbols) or
+                                  [self.focusItem().parentItem()])
+                    print "idle-------------------selection"
+                    print selection.__class__
+                    print unicode(selection)
+                    print "idle-------------------selection"
+                    # 此处获取
+                    if selection.__class__ == Input:
+                        if self.connectStartPoint:
+                            self.connectEndPoint = selection
+                        else:
+                            self.connectStartPoint = selection
+
+                        if self.connectStartPoint and self.connectEndPoint:
+                            item_type = Connect
+                            with undoCommands.UndoMacro(self.undo_stack, 'Place Symbol'):
+                                self.place_connect_symbol(item_type=item_type, parent=self.connectEndPoint, lastParent=self.connectStartPoint)
+                            self.connectStartPoint = None
+                            self.connectEndPoint = None
+                except (ValueError, AttributeError):
+                    pass
+
+                self.connectPoint = None
+
+
+            if symb.__class__ == Connect:
+                print "idle---------okokokookokokokkookokkokokook"
+                # 保存当前节点
+                self.connectPoint = symb
+
             if not symb:
                 self.mode = 'select_items'
                 self.orig_pos = event.scenePos()
@@ -1361,20 +1581,79 @@ class SDL_Scene(QtGui.QGraphicsScene, object):
 #               self.connection_start = symb
 
         elif self.mode == 'wait_placement':
+            # print "okokokokokokokokokokkokokokokokokokoko"
             try:
                 parent = self.can_insert(event.scenePos(),
                                          self.button_selected)
             except TypeError as err:
                 self.messages_window.addItem(str(err))
             else:
-                with undoCommands.UndoMacro(self.undo_stack, 'Place Symbol'):
-                    item = self.place_symbol(
-                            item_type=self.button_selected,
-                            parent=parent,
-                            pos=event.scenePos() if not parent else None)
+
+                # 判断是否有连线节点存储，如果有，则对点击操作的symbol进行保存
+                if self.connectPoint:
+
+                    # self.connectPoint.connect_to_parent_between(symb,self.connectStartPoint)
+                    # 替换为item
+                    # item_type = Connect
+                    # with undoCommands.UndoMacro(self.undo_stack, 'Place Symbol'):
+                    #     self.place_connect_symbol(item_type=item_type, parent=symb, lastParent=self.connectStartPoint)
+
+                    try:
+                        # If an item is selected or if its text has focus,
+                        # use it as parent item for the newly inserted item
+                        selection, = (list(self.selected_symbols) or
+                                      [self.focusItem().parentItem()])
+                        print "idle-------------------selection"
+                        print selection.__class__
+                        print unicode(selection)
+                        print "idle-------------------selection"
+                        # 此处获取
+                        if selection.__class__ == Input:
+                            print "f"
+                            print "f"
+                            print "f"
+                            print "f"
+                            if self.connectStartPoint:
+                                self.connectEndPoint = selection
+                            else:
+                                self.connectStartPoint = selection
+                                return None
+
+                            if self.connectStartPoint and self.connectEndPoint:
+                                print "final"
+                                print "final"
+                                print "final"
+                                print "final"
+                                item_type = Connect
+                                with undoCommands.UndoMacro(self.undo_stack, 'Place Symbol'):
+                                    item = self.place_connect_symbol(item_type=item_type, parent=self.connectEndPoint,lastParent=self.connectStartPoint)
+                                self.connectStartPoint = None
+                                self.connectEndPoint = None
+                                self.connectPoint = None
+                    except (ValueError, AttributeError):
+                        print 'eeeeeeeeeeeeeeerrrrrrrrrrrrrrrrrrrrrrrrroooooooooooooorrrrrrrrr'
+                        pass
+                else:
+                    with undoCommands.UndoMacro(self.undo_stack, 'Place Symbol'):
+                        print "mousePressEvent----------------------------self.button_selected---wait_placement"
+                        print self.button_selected
+                        print self.button_selected.common_name
+                        print unicode(parent)
+                        print "mousePressEvent----------------------------self.button_selected---wait_placement"
+                        # 此处用于放置符号 需要是新符号
+                        # 判断button_selected是否为connect
+
+                        # if self.button_selected == Connect:
+                        #     print "OK1231231232132212213123132123213213312132213"
+
+                        item = self.place_symbol(
+                                item_type=self.button_selected,
+                                parent=parent,
+                                pos=event.scenePos() if not parent else None)
             # self.button_selected = None
             self.mode = 'idle'
         elif self.mode == 'wait_connection_source':
+            # print "okokokokokokokokokokokokokokokok"
             # Check location, and if ok:
             self.mode = 'wait_next_connection_point'
             # if not OK, reset and:
@@ -1400,6 +1679,12 @@ class SDL_Scene(QtGui.QGraphicsScene, object):
     def quick_menu(self, pos, rect):
         ''' Add actions on the fly to the context-dependent menu that is
         displayed when the user draws a box on the screen '''
+
+        # print "ajsadjadjadsjkadsjlajdsjadsjkadsjkadsjkasdjksadjladsjadsj"
+        # print "ajsadjadjadsjkadsjlajdsjadsjkadsjkadsjkasdjksadjladsjadsj"
+        # print "ajsadjadjadsjkadsjlajdsjadsjkadsjkadsjkasdjksadjladsjadsj"
+        # print "ajsadjadjadsjkadsjlajdsjadsjkadsjkadsjkasdjksadjladsjadsj"
+        # print "ajsadjadjadsjkadsjlajdsjadsjkadsjkadsjkasdjksadjladsjadsj"
         menu       = QtGui.QMenu('Select item to add')
         singletons = (i.__class__ for i in self.visible_symb if i.is_singleton)
         candidates = filter(lambda x: not x.needs_parent
@@ -1407,6 +1692,11 @@ class SDL_Scene(QtGui.QGraphicsScene, object):
                             ACTIONS.get(self.context, []))
 
         def add_symbol(sort, rect):
+            # print 'wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww'
+            # print 'wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww'
+            # print 'wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww'
+            # print 'wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww'
+            # print 'wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww'
             size = rect if sort.default_size == "any" else None
             symb = self.place_symbol(sort, parent=None, pos=rect.topLeft(),
                                      rect=size)
@@ -1434,7 +1724,16 @@ class SDL_Scene(QtGui.QGraphicsScene, object):
 
     # pylint: disable=C0103
     def mouseReleaseEvent(self, event):
+        # print "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
+        # print "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
+        # print "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
+        # print "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
         if self.mode == 'select_items':
+            # print "mmmmmmmmmmmmmmmmmmmmmmmmmmm"
+            # print "mmmmmmmmmmmmmmmmmmmmmmmmmmm"
+            # print "mmmmmmmmmmmmmmmmmmmmmmmmmmm"
+            # print "mmmmmmmmmmmmmmmmmmmmmmmmmmm"
+            # print "mmmmmmmmmmmmmmmmmmmmmmmmmmm"
             found = False
             rect = self.select_rect.rect()
             self.clear_highlight()
@@ -1453,6 +1752,10 @@ class SDL_Scene(QtGui.QGraphicsScene, object):
             # stop with removeItem, it provokes segfault
             self.cancel()
         elif self.mode == 'wait_next_connection_point':
+            # print "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+            # print "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+            # print "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+            # print "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
             point = event.scenePos()
             previous = self.edge_points[-1]
             if abs(point.x() - previous.x()) < 15:
@@ -2092,9 +2395,9 @@ clean:
 
         pr_raw = Pr.parse_scene(scene, full_model=True
                                        if not self.readonly_pr else False)
-        print "----------------------pr_raw------------------------"
-        print pr_raw
-        print "----------------------pr_raw------------------------"
+        # print "----------------------pr_raw------------------------"
+        # print pr_raw
+        # print "----------------------pr_raw------------------------"
 
         # Move items back to original place to avoid scrollbar jumps
         for item in self.scene().floating_symb:
@@ -2539,9 +2842,9 @@ class OG_MainWindow(QtGui.QMainWindow, object):
         quit_action = self.findChild(QtGui.QAction, 'actionQuit')
         check_action = self.findChild(QtGui.QAction, 'actionCheck_model')
         about_action = self.findChild(QtGui.QAction, 'actionAbout')
-        ada_action = self.findChild(QtGui.QAction, 'actionGenerate_Ada_code')
-        qgen_ada_action = self.findChild(QtGui.QAction, 'actionGenerate_Ada_code_with_QGen')
-        qgen_c_action = self.findChild(QtGui.QAction, 'actionGenerate_C_code_with_QGen')
+        # ada_action = self.findChild(QtGui.QAction, 'actionGenerate_Ada_code')
+        # qgen_ada_action = self.findChild(QtGui.QAction, 'actionGenerate_Ada_code_with_QGen')
+        # qgen_c_action = self.findChild(QtGui.QAction, 'actionGenerate_C_code_with_QGen')
         png_action = self.findChild(QtGui.QAction, 'actionExport_to_PNG')
 
         # Connect menu actions
@@ -2606,9 +2909,9 @@ class OG_MainWindow(QtGui.QMainWindow, object):
                 self.statechart_mdi = each
                 self.mdi_area.subWindowActivated.connect(self.upd_statechart)
                 break
-        print "-------------opengeode------------start--------sub_mdi-------"
-        print self.sub_mdi
-        print "-------------opengeode------------start--------sub_mdi-------"
+        # print "-------------opengeode------------start--------sub_mdi-------"
+        # print self.sub_mdi
+        # print "-------------opengeode------------start--------sub_mdi-------"
         # self.statechart_view = self.findChild(SDL_View, 'statechart_view')
         # statechart view 画布 -- SDL_Scene
         # self.statechart_scene = SDL_Scene(context='statechart')
@@ -3154,9 +3457,9 @@ def cli(options):
     #         else:
     #             LOG.error('Too many errors, cannot generate code')
     # else:
-    if len(ast.processes) != 1:
-        LOG.error('Only one process at a time is supported')
-        return 1
+    # if len(ast.processes) != 1:
+    #     LOG.error('Only one process at a time is supported')
+    #     return 1
     if options.png or options.pdf or options.svg:
         export(ast, options)
     # if any((options.toAda, options.llvm, options.shared,ss
