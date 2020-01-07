@@ -178,15 +178,6 @@ class BetweenConnection(Connection):
     def start_point(self):
         ''' Compute connection origin - redefined function '''
 
-        # print "I did IT----------------------------------"
-        # print unicode(self.parentItem())
-        # print unicode(self.parentItem().pos())
-        # # print self.child().pos()
-        # print "I did IT----------------------------------"
-        # print "I did IT"
-        # print "I did IT"
-        # print "I did IT"
-        # print "I did IT"
         parent_rect = self.parentItem().boundingRect()
         return QPointF(parent_rect.width() / 2, parent_rect.height())
 
@@ -221,10 +212,59 @@ class BetweenConnection(Connection):
     @property
     def middle_points(self):
         ''' Compute connection intermediate points - redefined function '''
-        yield QPointF(self.start_point.x(), self.start_point.y() + 10)
-        yield QPointF(self.end_point.x(), self.start_point.y() + 10)
+        yield QPointF(self.start_point.x(), self.start_point.y() + 20)
+        yield QPointF(self.end_point.x(), self.start_point.y() + 20)
 
+############################
+class BetweenConnectionUp(Connection):
+    ''' Fork-like connection, e.g. between a state and an input symbol '''
 
+    @property
+    def start_point(self):
+        ''' Compute connection origin - redefined function '''
+
+        # print "I did IT----------------------------------"
+        # print unicode(self.parentItem())
+        # print unicode(self.parentItem().pos())
+        # # print self.child().pos()
+
+        parent_rect = self.parentItem().boundingRect()
+        return QPointF(parent_rect.width() / 2, 0)
+
+    @property
+    def end_point(self):
+        ''' Compute connection end point - redefined function '''
+        # coord = self.child.pos()
+        coord = self.child.scenePos()
+        # print "end_point--------------"
+        # print coord
+        # coord.setX(coord.x() + self.child.boundingRect().width() / 2)
+        child_rect = self.child.boundingRect()
+        # print self.parentItem().pos()
+        # print "end_point--------------"
+        p_x = self.parentItem().scenePos().x()
+        p_y = self.parentItem().scenePos().y()
+        print "child_coord----------------"
+        print coord.x()
+        print coord.y()
+        print "child_coord----------------"
+        coord.setX(-p_x+coord.x()+child_rect.width() / 2)
+        coord.setY(-p_y+coord.y())
+        # return QPointF(coord)
+
+        # coord.setX(0)
+        # coord.setY(0)
+        return coord
+
+        # child_rect = self.child().boundingRect()
+        # return QPointF(child_rect.width() / 2, child_rect.height())
+
+    @property
+    def middle_points(self):
+        ''' Compute connection intermediate points - redefined function '''
+        yield QPointF(self.start_point.x(), self.start_point.y() - 20)
+        yield QPointF(self.end_point.x(), self.start_point.y() - 20)
+############################
 class JoinConnection(Connection):
     ''' Inverted fork-like connection, to join to a common point '''
     def reshape(self):

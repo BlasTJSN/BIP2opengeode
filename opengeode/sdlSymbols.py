@@ -29,7 +29,7 @@ from itertools import chain
 from PySide.QtCore import Qt, QPoint, QRect, QRectF, QPointF
 from PySide.QtGui import(QPainterPath, QBrush, QColor, QRadialGradient, QPen)
 
-from genericSymbols import HorizontalSymbol, VerticalSymbol, Comment
+from genericSymbols import HorizontalSymbol, VerticalSymbol, Comment,ConnectorSymbol
 from Connectors import Connection, JoinConnection, Signalroute
 
 import ogParser
@@ -55,7 +55,7 @@ SDL_BLACKBOLD = ['\\b{word}\\b'.format(word=word) for word in (
 
 SDL_REDBOLD = ['\\b{word}\\b'.format(word=word) for word in (
               'INPUT', 'OUTPUT', 'STATE', 'DECISION', 'NEXTSTATE', 'INTEGER',
-              'CHARACTER', 'ASN1INT',
+              'CHARACTER', 'ASN1INT', "PORTUP",
               'TASK', 'PROCESS', 'LABEL', 'JOIN', 'CONNECTION', 'CONNECT')]
 
 
@@ -132,8 +132,6 @@ def variables_autocompletion(symbol, type_filter=None):
     return res
 
 
-
-
 # pylint: disable=R0904
 class Input(HorizontalSymbol):
     ''' SDL INPUT Symbol '''
@@ -175,16 +173,38 @@ class Input(HorizontalSymbol):
                                                          ContinuousSignal))
                        else parent.parentItem())
         self.branch_entrypoint = item_parent.branch_entrypoint
+
+        print "insert coord------------------------------"
+        print x
+        print y
+        print parent.pos()
+        print item_parent.branch_entrypoint
+        print "insert coord------------------------------"
         super(Input, self).insert_symbol(item_parent, x, y)
+
+    # 对圆增加resize功能，消除bug
+    def resize_item(self, rect):
+        ''' Redefinition of the resize item (block is a square) '''
+        size = min(rect.width(), rect.height())
+        rect.setWidth(size)
+        rect.setHeight(size)
+        super(Input, self).resize_item(rect)
 
     def set_shape(self, width, height):
         ''' Compute the polygon to fit in width, height '''
+        # path = QPainterPath()
+        # path.lineTo(width, 0)
+        # path.lineTo(width - 11, height / 2)
+        # path.lineTo(width, height)
+        # path.lineTo(0, height)
+        # path.lineTo(0, 0)
+
+        # 画一个圆
+        # circ = min(width, height)
+        circ = 30
         path = QPainterPath()
-        path.lineTo(width, 0)
-        path.lineTo(width - 11, height / 2)
-        path.lineTo(width, height)
-        path.lineTo(0, height)
-        path.lineTo(0, 0)
+        path.addEllipse(0, 0, circ, circ)
+
         self.setPath(path)
         super(Input, self).set_shape(width, height)
 
@@ -201,6 +221,99 @@ class Input(HorizontalSymbol):
             # Return the list of input signals and timers
             return (set(sig['name'] for sig in CONTEXT.input_signals).union(
                     CONTEXT.global_timers + CONTEXT.timers))
+
+###########
+class PortUp(ConnectorSymbol):
+    ''' SDL PORT Symbol '''
+    _unique_followers = ['Comment']
+    _insertable_followers = ['Task', 'ProcedureCall', 'Output', 'Decision',
+                             'Input', 'Label', 'Connect', 'ContinuousSignal','PortUp']
+    _terminal_followers = ['Join', 'State', 'ProcedureStop']
+
+    common_name = 'port_part'
+    # Define reserved keywords for the syntax highlighter
+    blackbold = SDL_BLACKBOLD
+    redbold = SDL_REDBOLD
+
+    def __init__(self, parent=None, ast=None):
+        ''' Create the INPUT symbol '''
+        ast = ast or ogAST.Input()
+        self.ast = ast
+        self.branch_entrypoint = None
+        if not ast.pos_y and parent:
+            # Make sure the item is placed below its parent
+            ast.pos_y = parent.y() + parent.boundingRect().height() + 10
+        super(PortUp, self).__init__(parent, text=ast.inputString,
+                x=ast.pos_x or 0, y=ast.pos_y or 0, hyperlink=ast.hyperlink)
+        self.set_shape(ast.width, ast.height)
+        gradient = QRadialGradient(50, 50, 50, 50, 50)
+        gradient.setColorAt(0, QColor(255, 240, 170))
+        gradient.setColorAt(1, Qt.white)
+        self.setBrush(QBrush(gradient))
+        self.terminal_symbol = False
+        self.parser = ogParser
+        if ast.comment:
+            Comment(parent=self, ast=ast.comment)
+
+    # 重点方法-----父节点与当前符号的连线关系设计
+    def insert_symbol(self, parent, x, y):
+        ''' Insert Input symbol - propagate branch Entry point '''
+        # Make sure that parent is a state, not a sibling symbol
+        item_parent = (parent if not isinstance(parent, (PortUp,
+                                                         ContinuousSignal))
+                       else parent.parentItem())
+        self.branch_entrypoint = item_parent.branch_entrypoint
+
+        print "insert coord------------------------------"
+        print x
+        print y
+        print parent.pos()
+        print item_parent.branch_entrypoint
+        print "insert coord------------------------------"
+        super(PortUp, self).insert_symbol(item_parent, x, y)
+
+    # 对圆增加resize功能，消除bug
+    def resize_item(self, rect):
+        ''' Redefinition of the resize item (block is a square) '''
+        size = min(rect.width(), rect.height())
+        rect.setWidth(size)
+        rect.setHeight(size)
+        super(PortUp, self).resize_item(rect)
+
+    def set_shape(self, width, height):
+        ''' Compute the polygon to fit in width, height '''
+        # path = QPainterPath()
+        # path.lineTo(width, 0)
+        # path.lineTo(width - 11, height / 2)
+        # path.lineTo(width, height)
+        # path.lineTo(0, height)
+        # path.lineTo(0, 0)
+
+        # 画一个圆
+        # circ = min(width, height)
+        circ = 30
+        path = QPainterPath()
+        path.addEllipse(0, 0, circ, circ)
+
+        self.setPath(path)
+        super(PortUp, self).set_shape(width, height)
+
+    @property
+    def completion_list(self):
+        ''' Set auto-completion list '''
+        if '(' in unicode(self):
+            # Input parameter: return the list of variables of this type
+            input_name = unicode(self).split('(')[0].strip().lower()
+            asn1_filter = [sig.get('type') for sig in CONTEXT.input_signals if
+                           sig['name'] == input_name]
+            return variables_autocompletion(self, asn1_filter)
+        else:
+            # Return the list of input signals and timers
+            return (set(sig['name'] for sig in CONTEXT.input_signals).union(
+                    CONTEXT.global_timers + CONTEXT.timers))
+
+###########
+
 # new
 class ConnectBase(HorizontalSymbol):
     ''' SDL INPUT Symbol '''

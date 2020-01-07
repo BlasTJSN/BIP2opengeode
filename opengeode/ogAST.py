@@ -867,8 +867,8 @@ class Process(object):
         # Set default coordinates and width/height
         self.pos_x = 250
         self.pos_y = 150
-        self.width = 150
-        self.height = 75
+        self.width = 200
+        self.height = 150
         # Optional hyperlink
         self.hyperlink = None
         # Optional comment

@@ -66,9 +66,11 @@ import undoCommands
 import ogAST
 import ogParser
 from Connectors import Connection, VerticalConnection, CommentConnection, \
-                       RakeConnection, JoinConnection, Channel,BetweenConnection
+                       RakeConnection, JoinConnection, Channel,BetweenConnection,BetweenConnectionUp
 
 from TextInteraction import EditableText
+
+# from sdlSymbols import PortUp,Input
 
 LOG = logging.getLogger(__name__)
 
@@ -981,7 +983,7 @@ class HorizontalSymbol(Symbol, object):
     def __init__(self, parent=None, text='...',
             x=None, y=None, hyperlink=None):
         super(HorizontalSymbol, self).__init__(parent)
-        self.minDistanceToSymbolAbove = 20
+        self.minDistanceToSymbolAbove = -ogAST.Input().height // 2
         self.connection = None
         if self.has_text_area:
             self.text = EditableText(parent=self, text=text,
@@ -1005,7 +1007,11 @@ class HorizontalSymbol(Symbol, object):
         # 重点关注方法
         print "enter BetweenConnection-----------------------------------------------------"
         # return BetweenConnection(parent, self)
-        return BetweenConnection(parent, lastParent)
+
+        if parent.common_name == "input_part":
+            return BetweenConnection(parent, lastParent)
+        else:
+            return BetweenConnectionUp(parent, lastParent)
 
     def set_valid_pos(self, pos):
         ''' Redefined function - make sure symbol is below its parent '''
@@ -1061,7 +1067,8 @@ class HorizontalSymbol(Symbol, object):
             pos_y = (parent.boundingRect().height() +
                     self.minDistanceToSymbolAbove)
         self.position = QPointF(pos_x, pos_y)
-        self.connection = self.connect_to_parent()
+        # self.position = QPointF(0, -100)
+        # self.connection = self.connect_to_parent()
 
         self.updateConnectionPoints()
         #self.cam(self.position, self.position)
@@ -1226,6 +1233,263 @@ class HorizontalSymbol(Symbol, object):
         except AttributeError:
             pass
         self.update_connections()
+
+##############################
+class ConnectorSymbol(Symbol, object):
+    '''
+        Class used to handle horizontal symbols
+        In case of SDL: INPUT, DECISION answers, Text Symbol, Start
+    '''
+    def __init__(self, parent=None, text='...',
+            x=None, y=None, hyperlink=None):
+        super(ConnectorSymbol, self).__init__(parent)
+        self.minDistanceToSymbolAbove = -ogAST.Process().height - ogAST.Input().height // 2
+        self.connection = None
+        if self.has_text_area:
+            self.text = EditableText(parent=self, text=text,
+                    hyperlink=hyperlink)
+        if parent:
+            if x and y:
+                local_pos = parent.mapFromScene(x, y)
+                self.insert_symbol(parent, local_pos.x(), local_pos.y())
+            else:
+                self.insert_symbol(parent, None, None)
+        else:
+            self.position = QPointF(x or 0, y or 0)
+
+    def connect_to_parent(self):
+        ''' Redefined: connect to parent item '''
+        # 重点关注方法
+        return RakeConnection(self.parent, self)
+
+    def connect_to_parent_between(self,parent,lastParent):
+        ''' Redefined: connect to parent item '''
+        # 重点关注方法
+        print "enter BetweenConnection-----------------------------------------------------"
+        # return BetweenConnection(parent, self)
+        return BetweenConnectionUp(parent, lastParent)
+
+    def set_valid_pos(self, pos):
+        ''' Redefined function - make sure symbol is below its parent '''
+        if not self.hasParent:
+            super(ConnectorSymbol, self).set_valid_pos(pos)
+        else:
+            new_y = max(pos.y(), self.parent.boundingRect().height() +
+                        self.minDistanceToSymbolAbove)
+            self.setPos(pos.x(), new_y)
+
+    # 重点方法
+    def insert_symbol(self, parent, pos_x, pos_y):
+        ''' Insert the symbol in the scene - Align below the parent '''
+        print "HorizontalSymbol-----insert_symbol----parent"
+        print unicode(parent)
+        print pos_x
+        print pos_y
+        print "HorizontalSymbol-----insert_symbol----parent"
+        if not parent:
+            self.position = QPointF(pos_x or 0, pos_y or 0)
+            return
+        super(ConnectorSymbol, self).insert_symbol(parent, pos_x, pos_y)
+        if pos_x is None or pos_y is None:
+            # Usually for first insertion when item is created:
+            # compute position and (if relevant) move siblings
+            first, last = None, None
+            has_siblings = False
+            for sibling in self.siblings():
+                has_siblings = True
+                first = min(first, sibling.x()) if(
+                        first is not None) else sibling.x()
+                last = max(last, sibling.x() +
+                        sibling.boundingRect().width()) if(
+                                last is not None) else(sibling.x() +
+                                        sibling.boundingRect().width())
+            group_width = last - first if first is not None else 0
+            for sibling in self.siblings():
+                sib_x = sibling.x() - (self.boundingRect().width()) / 2 - 10
+                sib_oldpos = sibling.position
+                sibling.pos_x = sib_x
+                undo_cmd = undoCommands.MoveSymbol(sibling,
+                                                   sib_oldpos,
+                                                   sibling.position)
+                self.scene().undo_stack.push(undo_cmd)
+            most_left = min([sibling.x()
+                for sibling in self.siblings()] or [0])
+            if has_siblings:
+                pos_x = most_left + group_width + 20
+            else:
+                # Verical alignment (x-axis):
+                pos_x = (parent.boundingRect().width() -
+                        self.boundingRect().width()) / 2
+            pos_y = (parent.boundingRect().height() +
+                    self.minDistanceToSymbolAbove)
+        self.position = QPointF(pos_x, pos_y)
+        # self.position = QPointF(0, -100)
+        # self.connection = self.connect_to_parent()
+
+        self.updateConnectionPoints()
+        #self.cam(self.position, self.position)
+
+############################
+    # 重点方法
+    def insert_symbol_connect(self, parent, pos_x, pos_y, lastParent=None):
+        ''' Insert the symbol in the scene - Align below the parent '''
+        print "HorizontalSymbol-----insert_symbol----parent"
+        print unicode(parent)
+        print pos_x
+        print pos_y
+        print "HorizontalSymbol-----insert_symbol----parent"
+        if not parent:
+            self.position = QPointF(pos_x or 0, pos_y or 0)
+            return
+        super(ConnectorSymbol, self).insert_symbol(parent, pos_x, pos_y)
+        if pos_x is None or pos_y is None:
+            # Usually for first insertion when item is created:
+            # compute position and (if relevant) move siblings
+            first, last = None, None
+            has_siblings = False
+            for sibling in self.siblings():
+                has_siblings = True
+                first = min(first, sibling.x()) if (
+                    first is not None) else sibling.x()
+                last = max(last, sibling.x() +
+                           sibling.boundingRect().width()) if (
+                    last is not None) else(sibling.x() +
+                                           sibling.boundingRect().width())
+            group_width = last - first if first is not None else 0
+            for sibling in self.siblings():
+                sib_x = sibling.x() - (self.boundingRect().width()) / 2 - 10
+                sib_oldpos = sibling.position
+                sibling.pos_x = sib_x
+                undo_cmd = undoCommands.MoveSymbol(sibling,
+                                                   sib_oldpos,
+                                                   sibling.position)
+                self.scene().undo_stack.push(undo_cmd)
+            most_left = min([sibling.x()
+                             for sibling in self.siblings()] or [0])
+            if has_siblings:
+                pos_x = most_left + group_width + 20
+            else:
+                # Verical alignment (x-axis):
+                pos_x = (parent.boundingRect().width() -
+                         self.boundingRect().width()) / 2
+            pos_y = (parent.boundingRect().height() +
+                     self.minDistanceToSymbolAbove)
+        self.position = QPointF(pos_x, pos_y)
+
+        if lastParent:
+            self.connection = self.connect_to_parent_between(parent, lastParent)
+        else:
+            self.connection = self.connect_to_parent()
+
+        self.updateConnectionPoints()
+        # self.cam(self.position, self.position)
+############################
+
+    def update_connections(self):
+        '''
+           Redefined from Symbol class
+           Horizontal symbols may have siblings - check their shape.
+        '''
+        super(ConnectorSymbol, self).update_connections()
+        try:
+            for sibling in self.siblings():
+                for cnx in sibling.last_branch_item.connections():
+                    cnx.reshape()
+        except AttributeError:
+            pass
+
+    def siblings(self):
+        ''' Return all the items's sibling symbols '''
+        try:
+            return (item for item in self.parent.childItems()
+                    if item is not self and isinstance(item, ConnectorSymbol))
+            # Don't test only against the same type, that would exclude
+            # e.g. Inputs next to Continuous signals
+#                   if item is not self and (isinstance(self, type(item)) or
+#                       isinstance(item, type(self))))
+        except:
+            return ()
+
+    def next_aligned_symbol(self):
+        ''' Return the next symbol in the flow '''
+        for symbol in self.childSymbols():
+            if not isinstance(symbol, (ConnectorSymbol, Comment)):
+                return symbol
+        return None
+
+    def mouse_move(self, event):
+        ''' Will prevent move from being above the parent '''
+        if self.mode == 'Move':
+            event_pos = event.pos()
+            new_y = self.pos_y + (event_pos.y() - event.lastPos().y())
+            new_x = self.pos_x + (event_pos.x() - event.lastPos().x())
+            self.position = QPointF(new_x, new_y)
+            self.update_connections()
+        super(ConnectorSymbol, self).mouse_move(event)
+
+    def cam(self, old_pos, new_pos, ignore=None):
+        '''
+            Collision avoidance manoeuvre for parallel branches
+            (for SDL: input, decision answers, continuous signals)
+        '''
+        if self.hasParent:
+            # Rectangle of current group of item in scene coordinates
+            try:
+                # Disconnect the connection below the last item
+                # (otherwise the rectangle will be too big)
+                last_cnx, = (cnx for cnx in self.last_branch_item.connections()
+                        if cnx.child == self.parentItem())
+                last_cnx.setParentItem(None)
+            except (AttributeError, ValueError):
+                last_cnx = None
+
+            rect = (self.sceneBoundingRect() |
+                    self.mapRectToScene(self.childrenBoundingRect()))
+            try:
+                # Set back the last connection
+                last_cnx.setParentItem(self.last_branch_item)
+            except AttributeError:
+                pass
+            # Get all siblings (e.g. surrounding inputs/decision answers)
+            for sibling in self.siblings():
+                try:
+                    # Disconnect the connection below the last item
+                    last_cnx, = (cnx for cnx in
+                            sibling.last_branch_item.connections()
+                            if cnx.child == self.parentItem())
+                    last_cnx.setParentItem(None)
+                except (AttributeError, ValueError):
+                    last_cnx = None
+                sib_rect = (sibling.sceneBoundingRect() |
+                        sibling.mapRectToScene(sibling.childrenBoundingRect()))
+                try:
+                    # Set back the last connection
+                    last_cnx.setParentItem(sibling.last_branch_item)
+                except AttributeError:
+                    pass
+                if rect.intersects(sib_rect):
+                    width = (sib_rect & rect).width() + 10
+                    old_sib_pos = sibling.position
+                    sibling.pos_x += width if self.pos_x <= sibling.pos_x \
+                                           else -width
+                    undo_cmd = undoCommands.MoveSymbol(sibling,
+                                                       old_sib_pos,
+                                                       sibling.position)
+                    try:
+                        self.scene().undo_stack.push(undo_cmd)
+                    except AttributeError:
+                        # If there is no scene or no undo stack
+                        pass
+                    sibling.cam(sibling.position, sibling.position)
+        super(ConnectorSymbol, self).cam(old_pos, new_pos, ignore)
+        # Recursively call the cam of the parent
+        try:
+            self.parentItem().cam(self.parentItem().position,
+                                  self.parentItem().position)
+        except AttributeError:
+            pass
+        self.update_connections()
+###############################
 
 
 class VerticalSymbol(Symbol, object):

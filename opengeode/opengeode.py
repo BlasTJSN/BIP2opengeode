@@ -95,11 +95,11 @@ from genericSymbols import(Symbol, Comment, Cornergrabber, Connection, Channel)
 from sdlSymbols import(Input, Output, Decision, DecisionAnswer, Task,
         ProcedureCall, TextSymbol, State, Start, Join, Label, Procedure,
         ProcedureStart, ProcedureStop, StateStart, Connect, Process,
-        ContinuousSignal, ProcessType)
+        ContinuousSignal, ProcessType,PortUp)
 from TextInteraction import EditableText
 
 # Icons and png files generated from the resource file:
-import icons  # NOQA
+# import icons  # NOQA
 
 # Logging: ist of properly loaded modules that will use it
 LOG = logging.getLogger(__name__)
@@ -178,7 +178,7 @@ G_SYMBOLS = set()
 
 # Lookup table used to configure the context-dependent toolbars
 ACTIONS = {
-    'block': [Process, ProcessType, Comment, TextSymbol,State, Input, Connect],
+    'block': [Process, ProcessType, Comment, TextSymbol,State, Input, Connect,PortUp],
     'process': [Start, State, Input, Connect, ContinuousSignal, Task, Decision,
                 DecisionAnswer, Output, ProcedureCall, TextSymbol, Comment,
                 Label, Join, Procedure],
@@ -486,7 +486,7 @@ class SDL_Scene(QtGui.QGraphicsScene, object):
                 # At the moment do not support Text Areas
                 return False
             if any(child for child in each.childSymbols()
-                    if isinstance(child, (Input, ContinuousSignal))):
+                    if isinstance(child, (Input, PortUp, ContinuousSignal))):
                 return False
         return True
 
@@ -1528,7 +1528,7 @@ class SDL_Scene(QtGui.QGraphicsScene, object):
                     print unicode(selection)
                     print "idle-------------------selection"
                     # 此处获取
-                    if selection.__class__ == Input:
+                    if selection.__class__ == Input or selection.__class__ == PortUp:
                         if self.connectStartPoint:
                             self.connectEndPoint = selection
                         else:
@@ -1608,7 +1608,7 @@ class SDL_Scene(QtGui.QGraphicsScene, object):
                         print unicode(selection)
                         print "idle-------------------selection"
                         # 此处获取
-                        if selection.__class__ == Input:
+                        if selection.__class__ == Input or selection.__class__ == PortUp:
                             print "f"
                             print "f"
                             print "f"
