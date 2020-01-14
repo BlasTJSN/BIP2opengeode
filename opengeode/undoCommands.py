@@ -243,12 +243,14 @@ class MoveSymbol(QUndoCommand):
         self.symbol = symbol_id
         self.old_pos = old_pos
         self.new_pos = new_pos
-        if animate:
-            self.animation = QPropertyAnimation(self.symbol, "position")
-            self.animation.setDuration(500)
-            self.animation.setStartValue(self.old_pos)
-            self.animation.setEndValue(self.new_pos)
-            self.animation.setEasingCurve(QEasingCurve.OutCirc)
+
+        # 此处为体积碰撞动画效果,暂时全部关闭
+        # if animate:
+        #     self.animation = QPropertyAnimation(self.symbol, "position")
+        #     self.animation.setDuration(500)
+        #     self.animation.setStartValue(self.old_pos)
+        #     self.animation.setEndValue(self.new_pos)
+        #     self.animation.setEasingCurve(QEasingCurve.OutCirc)
 
     def undo(self):
         ''' Undo a symbol move '''

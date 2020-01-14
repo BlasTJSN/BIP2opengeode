@@ -342,6 +342,7 @@ class CommentConnection(Connection):
         ''' Compute connection origin - redefined function '''
         parent_rect = self.parentItem().boundingRect()
         return QPointF(parent_rect.width(), parent_rect.height() / 2)
+        # return QPointF(parent_rect.width(), parent_rect.height() / 2)
 
     @property
     def end_point(self):

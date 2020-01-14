@@ -1631,7 +1631,7 @@ class SDL_Scene(QtGui.QGraphicsScene, object):
                                 self.connectEndPoint = None
                                 self.connectPoint = None
                     except (ValueError, AttributeError):
-                        print 'eeeeeeeeeeeeeeerrrrrrrrrrrrrrrrrrrrrrrrroooooooooooooorrrrrrrrr'
+                        print ValueError, AttributeError
                         pass
                 else:
                     with undoCommands.UndoMacro(self.undo_stack, 'Place Symbol'):
@@ -1662,19 +1662,24 @@ class SDL_Scene(QtGui.QGraphicsScene, object):
     # pylint: disable=C0103
     def mouseMoveEvent(self, event):
         ''' Handle Click + Mouse move, based on the mode '''
+        # print "move------------------move--------------------move"
         if(event.buttons() == Qt.NoButton and
             self.mode != 'wait_next_connection_point') or self.mode == 'idle':
+            # print '---------------1111111111111------------------'
             return super(SDL_Scene, self).mouseMoveEvent(event)
         elif self.mode == 'select_items':
+            # print '-----------------22222222222------------------'
             rect = QRectF(self.orig_pos, event.scenePos())
             self.select_rect.setRect(rect.normalized())
         elif self.mode == 'wait_next_connection_point':
+            # print '---------------3333333333333333------------------'
             # Update the line
             line = self.temp_lines[-1].line()
             self.temp_lines[-1].setLine(line.x1(),
                                         line.y1(),
                                         event.scenePos().x(),
                                         event.scenePos().y())
+        # print "move------------------move--------------------move"
 
     def quick_menu(self, pos, rect):
         ''' Add actions on the fly to the context-dependent menu that is

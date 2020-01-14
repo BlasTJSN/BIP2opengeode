@@ -264,12 +264,12 @@ class PortUp(ConnectorSymbol):
                        else parent.parentItem())
         self.branch_entrypoint = item_parent.branch_entrypoint
 
-        print "insert coord------------------------------"
-        print x
-        print y
-        print parent.pos()
-        print item_parent.branch_entrypoint
-        print "insert coord------------------------------"
+        # print "insert coord------------------------------"
+        # print x
+        # print y
+        # print parent.pos()
+        # print item_parent.branch_entrypoint
+        # print "insert coord------------------------------"
         super(PortUp, self).insert_symbol(item_parent, x, y)
 
     # 对圆增加resize功能，消除bug

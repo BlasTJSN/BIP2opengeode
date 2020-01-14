@@ -51,6 +51,7 @@
 __all__ = ['Symbol', 'VerticalSymbol', 'HorizontalSymbol', 'Comment']
 import os
 import logging
+import time
 
 from PySide.QtCore import (Qt, QPoint, QPointF, QRect, QFile, QObject,
                            Signal, Property)
@@ -310,6 +311,7 @@ class Symbol(QObject, QGraphicsPathItem, object):
                 self.parser.parseSingleElement(self.common_name, pr_text)
         return ast, terminators
 
+    # 编辑状态
     def edit_text(self, pos=None):
         '''
             Set the focus on the text area for edition. Position is optional
@@ -613,6 +615,7 @@ class Symbol(QObject, QGraphicsPathItem, object):
                 self.cam(self.coord, self.position)
                 self.updateConnectionPoints()
         elif self.mode == 'Move' and self.coord != self.position:
+            print "move--------------------tttttttttt"
             with undoCommands.UndoMacro(self.scene().undo_stack, 'Move'):
                 undo_cmd = undoCommands.MoveSymbol(
                                             self, self.coord, self.position)
@@ -1122,6 +1125,11 @@ class HorizontalSymbol(Symbol, object):
 
         if lastParent:
             self.connection = self.connect_to_parent_between(parent, lastParent)
+            # time.sleep(100)
+            try:
+                self.text.set_textbox_position(parent, lastParent)
+            except:
+                pass
         else:
             self.connection = self.connect_to_parent()
 
@@ -1378,6 +1386,10 @@ class ConnectorSymbol(Symbol, object):
 
         if lastParent:
             self.connection = self.connect_to_parent_between(parent, lastParent)
+            try:
+                self.text.set_textbox_position(parent, lastParent)
+            except Exception as e:
+                print e
         else:
             self.connection = self.connect_to_parent()
 

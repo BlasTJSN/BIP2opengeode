@@ -141,9 +141,10 @@ class EditableText(QGraphicsTextItem, object):
     hasParent = False
     word_under_cursor = Signal(str)
 
-    def __init__(self, parent, text='...', hyperlink=None):
+    def __init__(self, parent, text='...', hyperlink=None, child=None):
         super(EditableText, self).__init__(parent)
         self.parent = parent
+        self.child = child
         self.setFont(QFont('Ubuntu', 10))
         self.completer = Completer(self)
         self.completer.widget().itemActivated.connect(self.completion_selected)
@@ -190,7 +191,7 @@ class EditableText(QGraphicsTextItem, object):
         cursor.clearSelection()
         self.setTextCursor(cursor)
 
-    def set_textbox_position(self):
+    def set_textbox_position(self,parent=None,lastParent=None):
         ''' Compute the textbox position '''
         parent_rect = self.parent.boundingRect()
         rect = self.boundingRect()
@@ -212,7 +213,24 @@ class EditableText(QGraphicsTextItem, object):
             y_pos = parent_rect.height()
         else:
             y_pos = 0
-        self.setPos(x_pos, y_pos)
+        # self.setPos(x_pos, y_pos)
+        if self.parent.common_name == "connect_part":
+            self.setPos(x_pos+100, y_pos-20)
+        # if parent and lastParent:
+        #     print "-----------------------zzzzzzzzzzz------------------"
+        #     print self.parent.boundingRect()
+        #     print self.parent.position
+        #     print self.boundingRect()
+        #     print parent.scenePos()
+        #     print lastParent.scenePos()
+        #     print unicode(parent)
+        #     print unicode(lastParent)
+        #     print (lastParent.scenePos().x() - parent.scenePos().x()) // 2
+        #     self.setPos(x_pos + (lastParent.scenePos().x() - parent.scenePos().x()) // 2, y_pos-40)
+        #     # print self.parent.connection
+        #     print "-----------------------zzzzzzzzzzz------------------"
+        else:
+            self.setPos(x_pos, y_pos)
 
     def try_resize(self):
         '''
