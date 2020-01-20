@@ -2,17 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # pylint: disable=C0302
-"""
-    OpenGEODE - A tiny, free SDL Editor for TASTE
 
-    SDL is the Specification and Description Language (Z100 standard from ITU)
-
-    Copyright (c) 2012-2019 European Space Agency
-
-    Designed and implemented by Maxime Perrotin
-
-    Contact: maxime.perrotin@esa.int
-"""
 
 import signal
 import sys
@@ -141,8 +131,8 @@ except ImportError:
     pass
 
 
-__all__ = ['opengeode', 'SDL_Scene', 'SDL_View', 'parse']
-__version__ = '2.1.5'
+__all__ = ['opengbipeditoreode', 'SDL_Scene', 'SDL_View', 'parse']
+__version__ = '0.1.1'
 
 if hasattr(sys, 'frozen'):
     # Detect if we are running on Windows (py2exe-generated)
@@ -154,8 +144,8 @@ if hasattr(sys, 'frozen'):
     else:
         # Redirect stderr to a log file - to avoid py2exe error message
         # that pops up at application closure when app logs errors
-        sys.stdout = open('opengeode_stdout.log', 'w')
-        sys.stderr = open('opengeode_stderr.log', 'w')
+        sys.stdout = open('bipeditor_stdout.log', 'w')
+        sys.stderr = open('bipeditor_stderr.log', 'w')
 else:
     CUR_DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -435,7 +425,7 @@ class SDL_Scene(QtGui.QGraphicsScene, object):
         # When connecting symbols, store list of intermediate points
         self.edge_points = []   # type: List[QPointF] in scene coordinates
         self.temp_lines = []    # type: List[QGraphicsLineItem]
-        self.process_name = 'opengeode'
+        self.process_name = 'bipeditor'
         # Scene name is used to update the tab window name when scene changes
         self.name = ''
         # search_item/search_pattern are used for search/replace function
@@ -843,7 +833,7 @@ class SDL_Scene(QtGui.QGraphicsScene, object):
             self.clear_focus()
             msg_box = QtGui.QMessageBox(view)
             msg_box.setIcon(QtGui.QMessageBox.Warning)
-            msg_box.setWindowTitle('OpenGEODE - Syntax Error')
+            msg_box.setWindowTitle('BIPEditor - Syntax Error')
             msg_box.setInformativeText('\n'.join(errs))
             msg_box.setText("Syntax error!")
             msg_box.setStandardButtons(QtGui.QMessageBox.Discard)
@@ -1178,7 +1168,7 @@ class SDL_Scene(QtGui.QGraphicsScene, object):
         elif doc_format == 'svg':
             device = QtSvg.QSvgGenerator()
             device.setFileName(filename)
-            device.setTitle('OpenGEODE SDL Diagram')
+            device.setTitle('BIPEditor SDL Diagram')
             device.setSize(rect.size().toSize())
         elif doc_format == 'pdf':
             device = QtGui.QPrinter()
@@ -2048,11 +2038,9 @@ class SDL_View(QtGui.QGraphicsView, object):
 
     def about_og(self):
         ''' Display the About dialog '''
-        QtGui.QMessageBox.about(self, 'About OpenGEODE',
-                'OpenGEODE - a tiny SDL editor for TASTE\n\n'
-                'Version {}\n\n'
-                'Copyright (c) 2012-2019 Maxime Perrotin / European Space Agency\n\n'
-                'Contact: Maxime.Perrotin@esa.int\n\n'.format(__version__))
+        QtGui.QMessageBox.about(self, 'About BIPEditor',
+                'BIPEditor - a tiny BIP editor for TASTE\n\n'
+                                )
 
     # pylint: disable=C0103
     def wheelEvent(self, wheelEvent):
@@ -2260,7 +2248,7 @@ class SDL_View(QtGui.QGraphicsView, object):
                     self, "Save model", ".", "SDL Model (*.pr)")[0]
         if self.filename and self.filename.split('.')[-1] != 'pr':
             self.filename += ".pr"
-        filename = ((self.filename or '_opengeode')
+        filename = ((self.filename or '_bipeditor')
                     + '.autosave') if autosave else self.filename
 
         prj_name = ''.join(
@@ -2277,7 +2265,7 @@ class SDL_View(QtGui.QGraphicsView, object):
             first_pr = '"{}"'.format(os.path.basename(filename))
 
         # other pr files: use relative path to "code" because gprbuild
-        # moves to this folder when calling opengeode
+        # moves to this folder when calling bipeditor
         other_pr = ", ".join('"' + os.path.relpath(pr_file, 'code') + '"'
                              for pr_file in sdlSymbols.AST.pr_files)
 
@@ -2292,7 +2280,7 @@ class SDL_View(QtGui.QGraphicsView, object):
    end Naming;
 
    package Compiler is
-      for Driver ("SDL") use "opengeode";
+      for Driver ("SDL") use "bipeditor";
       for Object_File_Suffix ("SDL") use ".adb";
       for Leading_Required_Switches ("SDL") use ("--toAda"{other_pr});
     end Compiler;
@@ -2343,7 +2331,7 @@ clean:
             #                 or not self.is_model_clean()):
             msg_box = QtGui.QMessageBox(self)
             msg_box.setIcon(QtGui.QMessageBox.Question)
-            msg_box.setWindowTitle('OpenGEODE - Check Semantics')
+            msg_box.setWindowTitle('BIPEditor - Check Semantics')
             msg_box.setText("We recommend to make a semantic check of the "
                             "model now.\n\n"
                             "Choose Apply to perform this check "
@@ -2364,7 +2352,7 @@ clean:
                       'or you may not be able to reload the model')
             msg_box = QtGui.QMessageBox(self)
             msg_box.setIcon(QtGui.QMessageBox.Critical)
-            msg_box.setWindowTitle('OpenGEODE - Syntax Error')
+            msg_box.setWindowTitle('BIPEditor - Syntax Error')
             msg_box.setText("Syntax errors were found. It is not advised to "
                             "save the model now, as you may not be able to "
                             "open it again. Are you sure you want to save?")
@@ -2563,7 +2551,7 @@ clean:
     def propose_to_save(self):
         ''' Display a dialog to let the user save his diagram '''
         msg_box = QtGui.QMessageBox(self)
-        msg_box.setWindowTitle('OpenGEODE')
+        msg_box.setWindowTitle('BIPEditor')
         msg_box.setText("The model has been modified.")
         msg_box.setInformativeText("Do you want to save your changes?")
         msg_box.setStandardButtons(QtGui.QMessageBox.Save |
@@ -2900,7 +2888,7 @@ class OG_MainWindow(QtGui.QMainWindow, object):
                                 )
         msg_dock.setStyleSheet('QDockWidget::title {background: lightgrey;}')
         messages = self.findChild(QtGui.QListWidget, 'messages')
-        messages.addItem('Welcome to OpenGEODE.')
+        messages.addItem('Welcome to BIPEditor.')
         self.view.messages_window = messages
         self.view.scene().messages_window = messages
         messages.itemClicked.connect(self.view.show_item)
@@ -3272,7 +3260,7 @@ def parse_args():
             help='Generate Ada code for the .pr file')
     parser.add_argument('--QGen', dest='QGen', action='store_true',
             help='Use QGen for code generation. NOTE: the first .pr file '
-            'passed to OpenGEODE must be the root model when using QGen '
+            'passed to BIPEditor must be the root model when using QGen '
             '(e.g. system_structure.pr)')
     parser.add_argument('--llvm', dest='llvm', action='store_true',
             help='Generate LLVM IR code for the .pr file (experimental)')
@@ -3491,7 +3479,7 @@ def gui(options):
     LOG.info('Model backup enabled - auto-saving every 2 minutes')
 
     app = init_qt()
-    app.setApplicationName('OpenGEODE')
+    app.setApplicationName('BIPEditor')
     app.setWindowIcon(QtGui.QIcon('./icons/input.png'))
 
     # Set all encodings to utf-8 in Qt
@@ -3518,7 +3506,7 @@ def gui(options):
     loader = QUiLoader()
     loader.registerCustomWidget(OG_MainWindow)
     loader.registerCustomWidget(SDL_View)
-    ui_file = QFile('./opengeode.ui')
+    ui_file = QFile('./bipeditor.ui')
     ui_file.open(QFile.ReadOnly)
     my_widget = loader.load(ui_file)
     ui_file.close()
@@ -3527,7 +3515,7 @@ def gui(options):
     return app.exec_()
 
 
-def opengeode():
+def bipeditor():
     ''' Tool entry point '''
     # Catch Ctrl-C to stop the app from the console
     signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -3536,7 +3524,7 @@ def opengeode():
 
     init_logging(options)
 
-    LOG.debug('Starting OpenGEODE version ' + __version__)
+    LOG.debug('Starting BIPEditor version ' + __version__)
     if any((options.check, options.toAda, options.png, options.pdf,
             options.svg, options.llvm, options.shared, options.stg,
             options.dll, options.toC)):
@@ -3555,6 +3543,6 @@ if __name__ == '__main__':
     if os.name == 'nt' or hasattr(sys, 'frozen'):
         os.environ['PATH'] += os.pathsep + os.path.abspath(
                                            os.path.dirname(sys.argv[0]) or cwd)
-    ret = opengeode()
+    ret = bipeditor()
     os.chdir(cwd)
     sys.exit(ret)

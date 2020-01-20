@@ -25,4 +25,4 @@
 """
 
 
-from opengeode import opengeode, __version__, SDL_Scene, SDL_View, parse, init_qt
+from bipeditor import bipeditor, __version__, SDL_Scene, SDL_View, parse, init_qt

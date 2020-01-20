@@ -1,6 +1,4 @@
-# BIP2opengeode
-
-use opengeode transform BIP
+# BIPEditor
 
 使用环境 python2.7 ubuntu16.04
 
