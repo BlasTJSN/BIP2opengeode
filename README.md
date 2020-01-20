@@ -24,3 +24,15 @@ sudo add-apt-repository ppa:pyside
 sudo apt-get update
 sudo apt-get install python-pyside
 ```
+
+# 安装运行需要的python依赖
+```
+sudo pip2 install -r requirements.txt
+```
+
+# 运行方式
+```
+python2 bipeditor.py
+```
+
+
