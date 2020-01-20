@@ -1,0 +1,44 @@
+package example
+
+	// Port type definition
+	// The following defines a port type without data
+    port type PortType1() 
+	// This one defines a port type that involves a data
+    port type PortType2(int d)
+
+
+	// Connector type definition
+	// The following example defines a connector type that connects two ports
+    connector type OneToOne(PortType1 r1, PortType1 r2)
+        define r1 r2
+    end
+	
+	// This example defines a message passing between two ports
+	connector type MsgPassing(PortType2 r1, PortType2 r2)
+		define r1 r2
+		on r1 r2 down {r1.d = r2.d;}
+	end
+
+	// Atomic component type definition
+	atom type Controller()
+		export port PortType1 p1()
+	end
+	
+	// Atomic component type definition
+	atom type MoveDriver()
+		export port PortType1 p2()
+	end
+
+
+	// Compound component type definition
+	// in compound, you will create instances for each atomic component type
+    compound type OverTakingCompound()
+        // the following is the component instance
+		component Controller Ctr()
+		component MoveDriver Mdr()
+
+		// and then the connector instance
+		connector OneToOne cntP(Ctr.p1, Mdr.p2)
+
+    end
+end
